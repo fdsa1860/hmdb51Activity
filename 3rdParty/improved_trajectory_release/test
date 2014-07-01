@@ -1,0 +1,6 @@
+#!/bin/bash
+# My first script
+
+echo "Hello World!"
+./release/DenseTrackStab ./test_sequences/Mean_Machine_2001_\(Part_9\)_kick_ball_l_cm_np2_fr_med_3.avi -H ./test_sequences/Mean_Machine_2001_\(Part_9\)_kick_ball_l_cm_np2_fr_med_3.bb | gzip -> whatever.gz
+
