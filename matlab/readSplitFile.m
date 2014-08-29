@@ -3,13 +3,14 @@
 
 clear;clc;close all;
 
-splitPath = '/home/xikang/research/data/HMDB51/testTrainMulti_7030_splits';
+% splitPath = '/home/xikang/research/data/HMDB51/testTrainMulti_7030_splits';
+splitPath = '/Users/xikang/Documents/data/HMDB51/testTrainMulti_7030_splits';
 splitFiles1 = dir(fullfile(splitPath,'*split1.txt'));
 splitFiles2 = dir(fullfile(splitPath,'*split2.txt'));
 splitFiles3 = dir(fullfile(splitPath,'*split3.txt'));
 
-% trackletPath = '/home/xikang/research/data/HMDB51/tracklet';
-trackletPath = '/home/xikang/research/data/HMDB51/trackletOrig_gz';
+trackletPath = '/Users/xikang/Documents/data/HMDB51/trackletOrig';
+% trackletPath = '/home/xikang/research/data/HMDB51/trackletOrig_gz';
 
 splitFiles = splitFiles1;
 
@@ -47,15 +48,18 @@ allDataSet(emptyCells) = [];
 % add path and modify the extension name
 for j = 1:length(trainSet)
     [~,tempName,~] = fileparts(trainSet{j});
-    trainSet{j} = fullfile(trackletPath,[tempName '.gz']);
+%     trainSet{j} = fullfile(trackletPath,[tempName '.gz']);
+    trainSet{j} = fullfile(trackletPath,tempName);
 end
 for j = 1:length(testSet)
     [~,tempName,~] = fileparts(testSet{j});
-    testSet{j} = fullfile(trackletPath,[tempName '.gz']);
+%     testSet{j} = fullfile(trackletPath,[tempName '.gz']);
+    testSet{j} = fullfile(trackletPath,tempName);
 end
 for j = 1:length(allDataSet)
     [~,tempName,~] = fileparts(allDataSet{j});
-    allDataSet{j} = fullfile(trackletPath,[tempName '.gz']);
+%     allDataSet{j} = fullfile(trackletPath,[tempName '.gz']);
+    allDataSet{j} = fullfile(trackletPath,tempName);
 end
 
 save hmdb51_trackletOrig_fileSplit1 trainSet testSet trainLabel ...

@@ -4,6 +4,8 @@ clear;clc;close all;
 
 if ispc
     dataMainPath = 'D:\xikang\research\data\HMDB51';
+elseif ismac
+    dataMainPath = '/Users/xikang/Documents/data/HMDB51';
 else
     dataMainPath = '/home/xikang/research/data/HMDB51';
 end
@@ -59,15 +61,15 @@ for si = 1:length(sampleList)
     sampleList(si).annotation = fullfile(annoPath, annoList{si});
 end
 
-gzFile = dir(fullfile(outputPath,'*.gz'));
-counter = 1;
-for gi = 1:length(gzFile)
-%     gzFileList{counter} = gzFile(gi).name;
-    [~,temp,~] = fileparts(gzFile(gi).name);
-    gzFileList{counter} = temp;
-    counter = counter + 1;
-end
-gzFileList = sort(gzFileList);
+% gzFile = dir(fullfile(outputPath,'*.gz'));
+% counter = 1;
+% for gi = 1:length(gzFile)
+% %     gzFileList{counter} = gzFile(gi).name;
+%     [~,temp,~] = fileparts(gzFile(gi).name);
+%     gzFileList{counter} = temp;
+%     counter = counter + 1;
+% end
+% gzFileList = sort(gzFileList);
 
 for si = 1:length(sampleList)
 

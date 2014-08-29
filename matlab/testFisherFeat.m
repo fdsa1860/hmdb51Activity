@@ -6,10 +6,10 @@ clear;clc;close all;
 
 nInitCenter = 256;
 
-% % Load data
-% file = 'CodePool_20140417.mat'; % 300000
-% load(fullfile('../expData',file));
-% X = X(136:243,:);
+%% Load data
+file = 'CodePool_20140417.mat'; % 300000
+load(fullfile('../expData',file));
+X = X(136:243,:);
 % Y = X';
 % save('CodePool_L30_20140507.txt','Y','-ascii');
 
@@ -30,70 +30,69 @@ nInitCenter = 256;
 % save kmeans_hmdb51_matlab_init4000_L108_20140514 trainCenter;
 % load('../expData/kmeans_hmdb51_matlab_init4000_L108_20140514.mat','trainCenter');
 
-% D = size(X,1);
-% D2 = floor(D/2);
-% tic
-% [U,Score] = princomp(X');
-% toc
-% X2 = Score(:,1:D2)';
-% tic;
-% [means, covariances, priors] = vl_gmm(X2, nInitCenter);
-% toc
-% rmpath(genpath('../3rdParty/vlfeat-0.9.18/toolbox'));
-% save gmm256_hmdb51_20140604 means covariances priors;
-% load ../expData/gmm256_hmdb51_L108_20140604;
+D = size(X,1);
+D2 = floor(D/2);
+tic
+[U,Score,Lambda,~,~,mu] = pca(X');
+toc
+pcaMat = U(:,1:D2);
+pcaWhiten = Lambda(1:D2);
+pcaCenter = mu';
+% save pca256_hmdb51_L108_20140826 pcaMat pcaWhiten pcaCenter;
+load ../expData/pca256_hmdb51_L108_20140826;
+
+X2 = diag(pcaWhiten.^-0.5)*pcaMat'*bsxfun(@minus,X,pcaCenter);
+% X2 = pcaMat'*bsxfun(@minus,X,pcaCenter);
+% X2 = X;
+tic;
+[means, covariances, priors] = vl_gmm(X2, nInitCenter);
+toc
+% save gmm256_hmdb51_L108_PCA_noWhiten_20140828 means covariances priors;
+load ../expData/gmm256_hmdb51_L108_PCA_noWhiten_20140828;
 
 %% get dense trajectory BOW features
-% load('../expData/hmdb51_trackletOrig_fileSplit1.mat','allDataSet', ...
-%     'allDataLabel','allDataSplit');
-% startTime = tic;
-% if ~exist('tmp','dir')
-%     mkdir(fullfile('.','tmp'));
-% end
-% 
-% D2 = size(means,1);
-% fFeat = zeros(2*nInitCenter*D2,length(allDataSet));
-% % load dFeat6625;
-% indToErase = false(size(allDataLabel));
-% for i=1:length(allDataSet)
-% % for i = 6626:length(allDataSet)
-%     tic
-%     [~,file,ext] = fileparts(allDataSet{i});
-%     
-%     if strcmp(ext,'.gz')
-%         gunzip(allDataSet{i},fullfile('.','tmp'));
-%         traj = load(fullfile('.','tmp',file));
-%         delete(fullfile('.','tmp',file));
-%     end
-%     
-%     if isempty(traj)
-%         indToErase(i) = true;
-%         continue;
-%     end
-%     
-%     X = traj(:,137:137+108-1)';    % ignore the first 10 elements
-%     [U,Score] = princomp(X');
-%     X2 = Score(:,1:D2)';
-%     class_hist = vl_fisher(X2, means, covariances, priors);
-%     fFeat(:,i) = class_hist;
-%     
-%     save fFeat fFeat
-%     fprintf('%d of %d files are processed.\n',i,length(allDataSet));
-%     toc
-% end
-% 
-% fFeat(:,indToErase) = [];
-% allDataLabel(indToErase) = [];
-% allDataSplit(indToErase) = [];
-% 
-% if exist('tmp','dir')
-%     rmdir(fullfile('.','tmp'));
-% end
-% 
-% toc(startTime)
+load('../expData/hmdb51_trackletOrig_fileSplit1.mat','allDataSet', ...
+    'allDataLabel','allDataSplit');
+startTime = tic;
 
-% save fFeat256_hmdb51_L108_20140514 dFeat allDataLabel allDataSplit
-load ../expData/fFeat256_hmdb51_L108_20140514.mat
+D2 = size(means,1);
+fFeat = zeros(2*nInitCenter*D2,length(allDataSet));
+% load fFeat3044;
+indToErase = false(size(allDataLabel));
+tic
+parfor i=1:length(allDataSet)
+% for i=3045:length(allDataSet)
+    
+    traj = load(allDataSet{i});
+    
+    if isempty(traj)
+        indToErase(i) = true;
+        continue;
+    end
+    
+    X = traj(:,137:137+108-1)';    % ignore the first 10 elements
+    % pca projection
+    X2 = diag(pcaWhiten.^-0.5)*pcaMat'*bsxfun(@minus,X,pcaCenter);
+%     X2 = pcaMat'*bsxfun(@minus,X,pcaCenter);
+%     X2 = X;
+    % get fisher vector
+    class_hist = vl_fisher(X2, means, covariances, priors);
+    fFeat(:,i) = class_hist;
+    
+%     save fFeat fFeat
+    fprintf('%d files are processed.\n',i);
+
+end
+toc
+
+fFeat(:,indToErase) = [];
+allDataLabel(indToErase) = [];
+allDataSplit(indToErase) = [];
+
+toc(startTime)
+
+% save fFeat256_hmdb51_L108_PCA_noWhiten_20140828 fFeat allDataLabel allDataSplit
+load ../expData/fFeat256_hmdb51_L108_PCA_noWhiten_20140828.mat
 
 
 
@@ -102,6 +101,9 @@ load ../expData/fFeat256_hmdb51_L108_20140514.mat
 % hFeat_train = hFeat_train./bsxfun(@times,sum_hFeat_train,ones(size(hFeat_train,1),1));
 % sum_hFeat_test = sum(hFeat_test,1);
 % hFeat_test = hFeat_test./bsxfun(@times,sum_hFeat_test,ones(size(hFeat_test,1),1));
+fFeat = sign(fFeat).*(abs(fFeat).^0.5);
+sum_fFeat = sum(fFeat.^2,1).^0.5;
+fFeat = fFeat./bsxfun(@times,sum_fFeat,ones(size(fFeat,1),1));
 
 %% train a SVM problem
 
@@ -146,7 +148,7 @@ y2_test = allDataLabel(allDataSplit==2)';
 % rmpath(genpath('/home/xikang/research/code/groupActivity/3rdParty/libsvm-3.17'));
 
 %% train a SVM problem using one versus all, liblinear
-addpath(genpath('../3rdParty/liblinear-1.93/matlab'));
+addpath(genpath('../3rdParty/liblinear-1.94/matlab'));
 % Cind = -1:10;
 % C = 2.^Cind;
 C = 100;
@@ -176,7 +178,7 @@ for ci = 1:length(C)
     fprintf('\naccuracy is %f\n',mean(accuracy));
     accuracyMat(ci) = mean(accuracy);
 end
-rmpath(genpath('../3rdParty/liblinear-1.93/matlab'));
+rmpath(genpath('../3rdParty/liblinear-1.94/matlab'));
 
 % addpath(genpath('/home/xikang/research/code/groupActivity/3rdParty/libsvm-3.17'));
 % ly = unique(y2_train);
