@@ -89,10 +89,10 @@ void usage()
 
 bool arg_parse(int argc, char** argv)
 {
-	int c;
+	int c='a';
 	bool flag = false;
-	char* executable = basename(argv[0]);
-	while((c = getopt (argc, argv, "hS:E:L:W:N:s:t:A:I:H:")) != -1)
+//	char* executable = basename(argv[0]);
+//	while((c = getopt (argc, argv, "hS:E:L:W:N:s:t:A:I:H:")) != -1)
 	switch(c) {
 		case 'S':
 		start_frame = atoi(optarg);
@@ -132,10 +132,12 @@ bool arg_parse(int argc, char** argv)
 		break;
 
 		default:
-		fprintf(stderr, "error parsing arguments at -%c\n  Try '%s -h' for help.", c, executable );
-		abort();
+//		fprintf(stderr, "error parsing arguments at -%c\n  Try '%s -h' for help.", c, executable );
+//		abort();
+            ;
 	}
-	return flag;
+//	return flag;
+    return true;
 }
 
 #endif /*INITIALIZE_H_*/

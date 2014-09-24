@@ -3,13 +3,18 @@
 
 % function testFisherFeat
 clear;clc;close all;
+addpath('../3rdParty/yael_matlab_mac64_v401');
 
-nInitCenter = 256;
+% nInitCenter = 256;
+nInitCenter = 512;
 
 %% Load data
 file = 'CodePool_20140417.mat'; % 300000
 load(fullfile('../expData',file));
-X = X(136:243,:);
+X = X(40:135,:);      % HOG
+% X = X(136:243,:);   % HOF
+% X = X(244:339,:);       % MBHx
+% X = X(340:435,:);       % MBHy
 % Y = X';
 % save('CodePool_L30_20140507.txt','Y','-ascii');
 
@@ -30,87 +35,139 @@ X = X(136:243,:);
 % save kmeans_hmdb51_matlab_init4000_L108_20140514 trainCenter;
 % load('../expData/kmeans_hmdb51_matlab_init4000_L108_20140514.mat','trainCenter');
 
-D = size(X,1);
-D2 = floor(D/2);
-tic
-[U,Score,Lambda,~,~,mu] = pca(X');
-toc
-pcaMat = U(:,1:D2);
-pcaWhiten = Lambda(1:D2);
-pcaCenter = mu';
-% save pca256_hmdb51_L108_20140826 pcaMat pcaWhiten pcaCenter;
-load ../expData/pca256_hmdb51_L108_20140826;
+% D = size(X,1);
+% D2 = floor(D/2);
+% tic
+% [Score, pcaEigVec, pcaEigVal, pcaCenter] = yael_pca (X,D2);
+% toc
+% save pca256_hmdb51_MBHy_20140909 pcaEigVec pcaEigVal pcaCenter;
+% load ../expData/pca256_hmdb51_hog_20140903;
 
-X2 = diag(pcaWhiten.^-0.5)*pcaMat'*bsxfun(@minus,X,pcaCenter);
-% X2 = pcaMat'*bsxfun(@minus,X,pcaCenter);
-% X2 = X;
-tic;
-[means, covariances, priors] = vl_gmm(X2, nInitCenter);
-toc
-% save gmm256_hmdb51_L108_PCA_noWhiten_20140828 means covariances priors;
-load ../expData/gmm256_hmdb51_L108_PCA_noWhiten_20140828;
+% X2 = diag(pcaEigVal.^-0.5)*pcaEigVec'*bsxfun(@minus,X,pcaCenter);
+% % X2 = pcaEigVec'*bsxfun(@minus,X,pcaCenter);
+% % X2 = X;
+% tic
+% [means, covariances, priors] = vl_gmm(X2, nInitCenter);
+% toc
+% % tic;
+% % [priors, means, covariances] = yael_gmm(single(X2), nInitCenter);
+% % toc
+% % save gmm512_hmdb51_hog_PCA_Whiten_20140922 means covariances priors;
+% load ../expData/gmm512_hmdb51_hog_PCA_Whiten_20140922;
 
 %% get dense trajectory BOW features
-load('../expData/hmdb51_trackletOrig_fileSplit1.mat','allDataSet', ...
-    'allDataLabel','allDataSplit');
-startTime = tic;
+% load('../expData/hmdb51_trackletOrig_fileSplit1.mat','allDataSet', ...
+%     'allDataLabel','allDataSplit');
+% startTime = tic;
+% 
+% D2 = size(means,1);
+% fFeat = zeros(2*nInitCenter*D2,length(allDataSet));
+% % fFeat = zeros(nInitCenter*D2,length(allDataSet));
+% % load fFeat3044;
+% indToErase = false(size(allDataLabel));
+% tic
+% parfor i=1:length(allDataSet)
+% % for i=3045:length(allDataSet)
+%     
+%     traj = load(allDataSet{i});
+%     
+%     if isempty(traj)
+%         indToErase(i) = true;
+%         continue;
+%     end
+%     
+%     X = traj(:,41:41+96-1)';    % HOG, ignore the first 10 elements
+% %     X = traj(:,137:137+108-1)';    % HOF, ignore the first 10 elements
+% %     X = traj(:,245:245+96-1)';  % MBHx
+% %     X = traj(:,341:341+96-1)';  % MBHy
+%     % pca projection
+%     X2 = diag(pcaEigVal.^-0.5)*pcaEigVec'*bsxfun(@minus,X,pcaCenter);
+% %     X2 = pcaEigVec'*bsxfun(@minus,X,pcaCenter);
+% %     X2 = X;
+%     % get fisher vector
+%     class_hist = vl_fisher(X2, means, covariances, priors);
+% %     class_hist = yael_fisher(single(X2), priors, means, covariances,'sigma');
+% %     class_hist = yael_fisher(single(X2), priors, means, covariances);
+%     fFeat(:,i) = class_hist;
+%     
+% %     save fFeat fFeat
+%     fprintf('%d files are processed.\n',i);
+% 
+% end
+% toc
+% 
+% fFeat(:,indToErase) = [];
+% allDataLabel(indToErase) = [];
+% allDataSplit(indToErase) = [];
+% 
+% toc(startTime)
+% 
+% save('fFeat512_hmdb51_hog_PCA_Whiten_vlfeat_fisher_20140922','fFeat','allDataLabel','allDataSplit','-v7.3');
+% load ../expData/fFeat512_hmdb51_hog_PCA_Whiten_vlfeat_fisher_20140922.mat
 
-D2 = size(means,1);
-fFeat = zeros(2*nInitCenter*D2,length(allDataSet));
-% load fFeat3044;
-indToErase = false(size(allDataLabel));
-tic
-parfor i=1:length(allDataSet)
-% for i=3045:length(allDataSet)
-    
-    traj = load(allDataSet{i});
-    
-    if isempty(traj)
-        indToErase(i) = true;
-        continue;
-    end
-    
-    X = traj(:,137:137+108-1)';    % ignore the first 10 elements
-    % pca projection
-    X2 = diag(pcaWhiten.^-0.5)*pcaMat'*bsxfun(@minus,X,pcaCenter);
-%     X2 = pcaMat'*bsxfun(@minus,X,pcaCenter);
-%     X2 = X;
-    % get fisher vector
-    class_hist = vl_fisher(X2, means, covariances, priors);
-    fFeat(:,i) = class_hist;
-    
-%     save fFeat fFeat
-    fprintf('%d files are processed.\n',i);
+%% load all features
+% load ../expData/fFeat256_hmdb51_hog_PCA_Whiten_vlfeat_fisher_20140903.mat
+load ../expData/fFeat512_hmdb51_hog_PCA_Whiten_vlfeat_fisher_20140922.mat
+fFeatHOG = fFeat;
+labelHOG = allDataLabel;
+fFeatHOG = powerNormalization(fFeatHOG);
+fFeatHOG = l2Normalization(fFeatHOG);
+% load ../expData/fFeat256_hmdb51_L108_20140826.mat
+load ../expData/fFeat512_hmdb51_L108_PCA_Whiten_vlfeat_fisher_20140919.mat
+fFeatHOF = fFeat;
+labelHOF = allDataLabel;
+fFeatHOF = powerNormalization(fFeatHOF);
+fFeatHOF = l2Normalization(fFeatHOF);
+% load ../expData/fFeat256_hmdb51_MBHx_PCA_Whiten_vlfeat_fisher_20140908.mat
+load ../expData/fFeat512_hmdb51_MBHx_PCA_Whiten_vlfeat_fisher_20140915.mat
+fFeatMBHx = fFeat;
+labelMBHx = allDataLabel;
+fFeatMBHx = powerNormalization(fFeatMBHx);
+fFeatMBHx = l2Normalization(fFeatMBHx);
+% load ../expData/fFeat256_hmdb51_MBHy_PCA_Whiten_vlfeat_fisher_20140909.mat
+load ../expData/fFeat512_hmdb51_MBHy_PCA_Whiten_vlfeat_fisher_20140910.mat
+fFeatMBHy = fFeat;
+labelMBHy = allDataLabel;
+fFeatMBHy = powerNormalization(fFeatMBHy);
+fFeatMBHy = l2Normalization(fFeatMBHy);
 
-end
-toc
+clear fFeat allDataLabel;
 
-fFeat(:,indToErase) = [];
-allDataLabel(indToErase) = [];
-allDataSplit(indToErase) = [];
+fFeat = [fFeatHOG;fFeatHOF;fFeatMBHx;fFeatMBHy];
+allDataLabel = [labelHOG;labelHOF;labelMBHx;labelMBHy];
 
-toc(startTime)
-
-% save fFeat256_hmdb51_L108_PCA_noWhiten_20140828 fFeat allDataLabel allDataSplit
-load ../expData/fFeat256_hmdb51_L108_PCA_noWhiten_20140828.mat
-
-
-
-% % normalization
-% sum_hFeat_train = sum(hFeat_train,1);
-% hFeat_train = hFeat_train./bsxfun(@times,sum_hFeat_train,ones(size(hFeat_train,1),1));
-% sum_hFeat_test = sum(hFeat_test,1);
-% hFeat_test = hFeat_test./bsxfun(@times,sum_hFeat_test,ones(size(hFeat_test,1),1));
-fFeat = sign(fFeat).*(abs(fFeat).^0.5);
-sum_fFeat = sum(fFeat.^2,1).^0.5;
-fFeat = fFeat./bsxfun(@times,sum_fFeat,ones(size(fFeat,1),1));
-
-%% train a SVM problem
-
+%% split data into train and test data
 X2_train = fFeat(:,allDataSplit==1);
 y2_train = allDataLabel(allDataSplit==1)';
 X2_test = fFeat(:,allDataSplit==2);
 y2_test = allDataLabel(allDataSplit==2)';
+
+
+%% normalization
+
+% % intra normalization
+% intra_X2_train = sum(abs(X2_train),2).^0.5;
+% X2_train = X2_train./bsxfun(@times,intra_X2_train,ones(1,size(X2_train,2)));
+% power normalization
+X2_train = sign(X2_train).*(abs(X2_train).^0.5);
+% L2 normalization
+L2_X2_train = sum(X2_train.^2,1).^0.5;
+X2_train = X2_train./bsxfun(@times,L2_X2_train,ones(size(X2_train,1),1));
+
+% % intra normalization
+% X2_test = X2_test./bsxfun(@times,intra_X2_train,ones(1,size(X2_test,2)));
+% power normalization
+X2_test = sign(X2_test).*(abs(X2_test).^0.5);
+% L2 normalization
+L2_X2_test = sum(X2_test.^2,1).^0.5;
+X2_test = X2_test./bsxfun(@times,L2_X2_test,ones(size(X2_test,1),1));
+% fFeat = sign(fFeat).*(abs(fFeat).^0.5);
+% sum_fFeat = sum(fFeat.^2,1).^0.5;
+% fFeat = fFeat./bsxfun(@times,sum_fFeat,ones(size(fFeat,1),1));
+
+%% train a SVM problem
+
+
 
 % addpath(genpath('/home/xikang/research/code/groupActivity/3rdParty/libsvm-3.17'));
 % Cind = -10:10;
